@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/07/09 21:28:47 by jakim            ###   ########.fr       */
+/*   Updated: 2024/07/16 21:31:53 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,11 @@
 #include<readline/readline.h>
 #include<stdlib.h>
 #include<unistd.h>
+#include<signal.h>
 #include<sys/wait.h>
 #include "libft/libft.h"
 #include <errno.h>
+#include <termios.h>
 
 void	error_end(int er)
 {
@@ -192,14 +194,49 @@ char	*extract_location(char *envp[])
 	return (ft_substr(tmp, 22, ft_strchr(tmp, '.') - tmp - 22));
 }
 
+void	sg(int signal)
+{
+	if (signal == SIGINT)
+	{
+		rl_on_new_line();
+		rl_replace_line("", 0);
+		rl_redisplay();
+		printf("^C\n");
+		//write(1, "\n", 1);
+		rl_on_new_line();
+		rl_replace_line("", 0);
+		rl_redisplay();
+	}
+	else if (signal == SIGTERM)
+	{
+		printf("exit\n");
+		exit(0);
+	}
+	else if (signal == SIGQUIT)
+	{
+		rl_on_new_line();
+		rl_replace_line("", 0);
+		rl_redisplay();
+		return ;
+	}
+}
+
 int main(int argc, char *argv[], char *envp[])
 {
 	char	*cin;
 	pid_t	pid;
 	int	status;
 	char	*cwd;
-	while (1)
-	{
+
+	struct termios	old;
+	tcgetattr(0, &old);
+	old.c_lflag &= ~(512);
+	tcsetattr(0, TCSANOW, &old);
+	signal(SIGINT, sg);
+	signal(SIGTERM, sg);
+	signal(SIGQUIT, sg);
+	//while (1)
+	//{
 		cwd = getcwd(NULL, BUFSIZ);
 		cwd = ft_strjoin(cwd, "$ ");
 		cwd = ft_strjoin(":", cwd);
@@ -207,16 +244,22 @@ int main(int argc, char *argv[], char *envp[])
 		cwd = ft_strjoin("@", cwd);
 		cwd = ft_strjoin(extract_name(envp), cwd);
 		//free 해야함
-		pid = fork();
-		if (pid > 0)
-			wait(&status);
-		else
-		{
-			while (1)
-			{
+		//pid = fork();
+		//if (pid > 0)
+		//	wait(&status);
+		//else
+		//{
+			//while (1)
+			//{
+				//cin = readline(cwd);
 				cin = readline(cwd);
-				check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
-			}
-		}
-	}
+				if (!cin)
+				{
+					printf("exit\n");
+					exit(0);
+				}
+				//check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
+			//}
+		//}
+	//}
 }
