@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/07/16 21:31:53 by jakim            ###   ########.fr       */
+/*   Updated: 2024/07/18 00:36:14 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include "libft/libft.h"
 #include <errno.h>
 #include <termios.h>
+#include <readline/history.h>
 
 void	error_end(int er)
 {
@@ -194,6 +195,22 @@ char	*extract_location(char *envp[])
 	return (ft_substr(tmp, 22, ft_strchr(tmp, '.') - tmp - 22));
 }
 
+char	*extract_home(char *envp[])
+{
+	char	*tmp;
+	char	**re;
+
+	tmp = NULL;
+	while (*envp)
+	{
+		if (!ft_strncmp(*envp, "HOME=", 5))
+			break ;
+		envp++;
+	}
+	tmp = (*envp);
+	return (tmp+5);
+}
+
 void	sg(int signal)
 {
 	if (signal == SIGINT)
@@ -221,45 +238,95 @@ void	sg(int signal)
 	}
 }
 
+void	input_sig(struct termios *old)
+{
+	tcgetattr(0, old);
+	old->c_lflag &= ~(512);
+	tcsetattr(0, TCSANOW, old);
+	signal(SIGINT, sg);
+	signal(SIGTERM, sg);
+	signal(SIGQUIT, sg);
+}
+
+void	end_sig(struct termios *old)
+{
+	tcgetattr(0, old);
+	old->c_lflag |= 512;
+	tcsetattr(0, TCSANOW, old);
+	signal(SIGINT, SIG_DFL);
+	signal(SIGTERM, SIG_DFL);
+	signal(SIGQUIT, SIG_DFL);
+}
+
 int main(int argc, char *argv[], char *envp[])
 {
 	char	*cin;
 	pid_t	pid;
 	int	status;
 	char	*cwd;
-
+	char	*pwd;
+	char	**cd;
 	struct termios	old;
-	tcgetattr(0, &old);
-	old.c_lflag &= ~(512);
-	tcsetattr(0, TCSANOW, &old);
-	signal(SIGINT, sg);
-	signal(SIGTERM, sg);
-	signal(SIGQUIT, sg);
-	//while (1)
-	//{
-		cwd = getcwd(NULL, BUFSIZ);
+
+	pwd = getcwd(NULL, BUFSIZ);
+	while (1)
+	{
+		if (!ft_strncmp(pwd, extract_home(envp), ft_strlen(extract_home(envp))))
+			{
+				cwd = pwd + ft_strlen(extract_home(envp));
+				cwd = ft_strjoin("~", cwd);
+			}
+		else
+			cwd = pwd;
 		cwd = ft_strjoin(cwd, "$ ");
 		cwd = ft_strjoin(":", cwd);
 		cwd = ft_strjoin(extract_location(envp), cwd);
 		cwd = ft_strjoin("@", cwd);
 		cwd = ft_strjoin(extract_name(envp), cwd);
 		//free 해야함
-		//pid = fork();
-		//if (pid > 0)
-		//	wait(&status);
-		//else
-		//{
-			//while (1)
-			//{
-				//cin = readline(cwd);
-				cin = readline(cwd);
-				if (!cin)
+		input_sig(&old);
+		cin = readline(cwd);
+		end_sig(&old);
+		if (!cin)
+		{
+			printf("exit\n");
+			exit(0);
+		}
+		add_history(cin);
+		if (!ft_strncmp(cin, "cd", 2))
+		{
+			cd = ft_split(cin, ' '); //free
+			if (ft_strncmp(cd[0], "cd", 5))
+				printf("%s: command not found\n", cd[0]);
+			else if (cd[1] == NULL)
+			{
+				free(pwd);
+				pwd = ft_strdup(extract_home(envp)); // free
+			}
+			else if (cd[2] != NULL)
+				printf("minishell: cd: too many argument\n"); //표준에러로 바꾸는게 날거같긴함
+			else
+			{
+				if (!ft_strncmp(cd[1], "..", 5))
 				{
-					printf("exit\n");
-					exit(0);
+					if (ft_strrchr(pwd, '/') == pwd)
+						*(ft_strrchr(pwd, '/') + 1) = '\0';
+					else
+						*(ft_strrchr(pwd, '/')) = '\0';
 				}
-				//check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
-			//}
-		//}
-	//}
+				/*if (ft_strncmp(cd[1], ".", 5))
+				{
+					
+				}*/
+			}
+		}
+		else
+		{
+			pid = fork();
+			if (pid > 0)
+				wait(&status);
+			else
+				check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
+		}
+	}
 }
