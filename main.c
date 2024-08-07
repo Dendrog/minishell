@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/07 17:38:16 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/07 22:26:13 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -270,9 +270,9 @@ int main(int argc, char *argv[], char *envp[])
 	int i;
 	struct termios	old;
 
-	pwd = getcwd(NULL, BUFSIZ);
 	while (1)
 	{
+		pwd = getcwd(NULL, BUFSIZ);
 		if (!ft_strncmp(pwd, extract_home(envp), ft_strlen(extract_home(envp))))
 			{
 				cwd = pwd + ft_strlen(extract_home(envp));
@@ -295,27 +295,32 @@ int main(int argc, char *argv[], char *envp[])
 			exit(0);
 		}
 		add_history(cin);
-		if (!ft_strncmp(cin, "cd", 4))
+		if (cin[0] == 'c' && cin[1] == 'd' && (cin[2] == ' ' || cin[2] == '\0'))//!ft_strncmp(cin, "cd", 4))
 		{
 			tmp_pwd = ft_strdup(pwd);
 			cd = ft_split(cin, ' '); //free
-			if (cd[2] != NULL)
+			if (cd[1] == NULL)
+			{
+				free(tmp_pwd);
+				tmp_pwd = ft_strdup(extract_home(envp));
+			}
+			else if(cd[2] != NULL)
 				printf("minishell: cd: too many argument\n"); //표준에러로 바꾸는게 날거같긴함
 			else
 			{
-				if(!ft_strncmp(cd_path[i], "/", 4))
+				if(!ft_strncmp(cd_path[i], "/", 4)) //boom
 				{
 					free(tmp_pwd);
 					tmp_pwd = ft_strdup("/");
 				}
 				i = 0;
 				cd_path = ft_split(cd[1], '/');
-				while (cd_path[i])
+				while (cd_path[i] != NULL)
 				{
 					if (i == 0 && !ft_strncmp(cd_path[i], "~", 4))
 					{
-							free(tmp_pwd);
-							tmp_pwd = ft_strdup(extract_home(envp)); // free
+						free(tmp_pwd);
+						tmp_pwd = ft_strdup(extract_home(envp)); // free
 					}
 					else
 					{
@@ -334,9 +339,9 @@ int main(int argc, char *argv[], char *envp[])
 					}
 					i++;
 				}
-				if (chdir(tmp_pwd) == -1)
-					printf("cd: no such file or directory: %s", cd[1]);
 			}
+			if (chdir(tmp_pwd) == -1)
+				printf("cd: no such file or directory: %s", cd[1]);
 			/*else if (cd[1] == NULL || !ft_strncmp(cd[1], "~", 4))
 			{
 				free(pwd);
@@ -355,12 +360,13 @@ int main(int argc, char *argv[], char *envp[])
 			}*/
 		}
 		else
-		{
+		printf("else\n");
+		/*{
 			pid = fork();
 			if (pid > 0)
 				wait(&status);
 			else
 				check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
-		}
+		}*/
 	}
 }
