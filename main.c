@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/07/18 00:36:14 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/07 17:38:16 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -219,7 +219,6 @@ void	sg(int signal)
 		rl_replace_line("", 0);
 		rl_redisplay();
 		printf("^C\n");
-		//write(1, "\n", 1);
 		rl_on_new_line();
 		rl_replace_line("", 0);
 		rl_redisplay();
@@ -265,7 +264,10 @@ int main(int argc, char *argv[], char *envp[])
 	int	status;
 	char	*cwd;
 	char	*pwd;
+	char	*tmp_pwd;
 	char	**cd;
+	char	**cd_path;
+	int i;
 	struct termios	old;
 
 	pwd = getcwd(NULL, BUFSIZ);
@@ -293,18 +295,53 @@ int main(int argc, char *argv[], char *envp[])
 			exit(0);
 		}
 		add_history(cin);
-		if (!ft_strncmp(cin, "cd", 2))
+		if (!ft_strncmp(cin, "cd", 4))
 		{
+			tmp_pwd = ft_strdup(pwd);
 			cd = ft_split(cin, ' '); //free
-			if (ft_strncmp(cd[0], "cd", 5))
-				printf("%s: command not found\n", cd[0]);
-			else if (cd[1] == NULL)
+			if (cd[2] != NULL)
+				printf("minishell: cd: too many argument\n"); //표준에러로 바꾸는게 날거같긴함
+			else
+			{
+				if(!ft_strncmp(cd_path[i], "/", 4))
+				{
+					free(tmp_pwd);
+					tmp_pwd = ft_strdup("/");
+				}
+				i = 0;
+				cd_path = ft_split(cd[1], '/');
+				while (cd_path[i])
+				{
+					if (i == 0 && !ft_strncmp(cd_path[i], "~", 4))
+					{
+							free(tmp_pwd);
+							tmp_pwd = ft_strdup(extract_home(envp)); // free
+					}
+					else
+					{
+						if (!ft_strncmp(cd_path[i], "..", 5))
+						{
+							if (ft_strrchr(tmp_pwd, '/') == tmp_pwd)
+								*(ft_strrchr(tmp_pwd, '/') + 1) = '\0';
+							else
+								*(ft_strrchr(tmp_pwd, '/')) = '\0';
+						}
+						else
+						{
+							tmp_pwd = ft_strjoin(tmp_pwd, "/"); //free 해야함
+							tmp_pwd = ft_strjoin(tmp_pwd, cd_path[i]); //free 해야함
+						}
+					}
+					i++;
+				}
+				if (chdir(tmp_pwd) == -1)
+					printf("cd: no such file or directory: %s", cd[1]);
+			}
+			/*else if (cd[1] == NULL || !ft_strncmp(cd[1], "~", 4))
 			{
 				free(pwd);
 				pwd = ft_strdup(extract_home(envp)); // free
 			}
-			else if (cd[2] != NULL)
-				printf("minishell: cd: too many argument\n"); //표준에러로 바꾸는게 날거같긴함
 			else
 			{
 				if (!ft_strncmp(cd[1], "..", 5))
@@ -314,11 +351,8 @@ int main(int argc, char *argv[], char *envp[])
 					else
 						*(ft_strrchr(pwd, '/')) = '\0';
 				}
-				/*if (ft_strncmp(cd[1], ".", 5))
-				{
-					
-				}*/
-			}
+				else if ()
+			}*/
 		}
 		else
 		{
