@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/07 22:26:13 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/09 17:26:21 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -305,10 +305,10 @@ int main(int argc, char *argv[], char *envp[])
 				tmp_pwd = ft_strdup(extract_home(envp));
 			}
 			else if(cd[2] != NULL)
-				printf("minishell: cd: too many argument\n"); //표준에러로 바꾸는게 날거같긴함
+				printf("minishell: cd: too many arguments\n"); //표준에러로 바꾸는게 날거같긴함
 			else
 			{
-				if(!ft_strncmp(cd_path[i], "/", 4)) //boom
+				if(!ft_strncmp(cd[1], "/", 1)) //boom
 				{
 					free(tmp_pwd);
 					tmp_pwd = ft_strdup("/");
@@ -341,32 +341,19 @@ int main(int argc, char *argv[], char *envp[])
 				}
 			}
 			if (chdir(tmp_pwd) == -1)
-				printf("cd: no such file or directory: %s", cd[1]);
-			/*else if (cd[1] == NULL || !ft_strncmp(cd[1], "~", 4))
-			{
-				free(pwd);
-				pwd = ft_strdup(extract_home(envp)); // free
-			}
-			else
-			{
-				if (!ft_strncmp(cd[1], "..", 5))
-				{
-					if (ft_strrchr(pwd, '/') == pwd)
-						*(ft_strrchr(pwd, '/') + 1) = '\0';
-					else
-						*(ft_strrchr(pwd, '/')) = '\0';
-				}
-				else if ()
-			}*/
+				printf("minishell: cd: %s: No such file or directory\n", cd[1]);
+		}
+		else if(!ft_strncmp(cin, "export ",7) || !ft_strncmp(cin, "export", 8))
+		{
+			//now
 		}
 		else
-		printf("else\n");
-		/*{
+		{
 			pid = fork();
 			if (pid > 0)
 				wait(&status);
 			else
 				check_err(execute(cin, envp), -1, EOPNOTSUPP, 1);
-		}*/
+		}
 	}
 }
