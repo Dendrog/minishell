@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/09 22:36:10 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/11 22:57:16 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -257,7 +257,166 @@ void	end_sig(struct termios *old)
 	signal(SIGQUIT, SIG_DFL);
 }
 
-int main(int argc, char *argv[], char *envp[])
+void	all_free(char **ptr)
+{
+	while (*ptr != NULL)
+	{
+		free(*ptr);
+		ptr++;
+	}
+	free(ptr);
+}
+
+char **update_envp(char **envp, int type, char *new)
+{
+	int	i;
+	char	**ptr;
+
+	i = 0;
+	ptr = envp;
+	while (*ptr != NULL)
+	{
+		i++;
+		ptr++;
+	}
+	ptr = (char **)malloc((i + 5) * sizeof(char *));
+	i = 0;
+	while (envp[i] != NULL)
+	{
+		ptr[i] = ft_strdup(envp[i]);
+		i++;
+	}
+	ptr[i++] = new;
+	ptr[i] = NULL;
+	if (type == 1)
+		all_free(envp);
+	return (ptr);
+}
+
+void	print_envp(char **envp)
+{
+	while (*envp != NULL)
+	{
+		printf("%s\n", *envp);
+		envp++;
+	}
+}
+
+int	double_ptr_size(char **ptr)
+{
+	int	i;
+
+	i = 0;
+	while (ptr[i] != NULL)
+		i++;
+	return (i);
+}
+
+int	search_env(char **envp, char *name)
+{
+	int	i;
+	char	**re;
+
+	i = 0;
+	while (*envp)
+	{
+		if (!ft_strncmp(*envp, name, ft_strlen(name)))
+			break ;
+		envp++;
+		i++;
+	}
+	return (i);
+	/*tmp = (*envp);
+	return (tmp+5);*/
+}
+
+int	is_validname(char *ptr)
+{
+	while (*ptr && *ptr != '=')
+	{
+		if (!ft_isalnum(*ptr) && *ptr != '_')
+			return (0);
+		ptr++;
+	}
+	return (1);
+}
+
+int	env_validate(char *ptr)
+{
+	if ((ft_isalpha(*ptr) || *ptr == '_') && is_validname(ptr))
+	{
+		if (ft_strchr(ptr, '='))
+		{
+			if ((ft_strchr(ptr, '=') + 1)[0] == '\0')
+				return (1);
+			if (ft_strchr(ptr, '=') != ft_strrchr(ptr, '='))
+				return (2);
+			return (0);
+		}
+		else
+			return (1);
+	}
+	else
+		return (-1); //export: not an identifier: 2
+}
+
+char	*make_env(char *name, char *value, int flag)
+{
+	char	*ptr;
+	ptr = name;
+	ptr = ft_strjoin(ptr, "="); //free
+	if (flag > 0)
+		ptr = ft_strjoin(ptr, "'");
+	ptr = ft_strjoin(ptr, value);
+	if (flag > 0)
+		ptr = ft_strjoin(ptr, "'");
+	return (ptr);
+}
+
+char *set_env(char *name, char *value, int flag, char ***envp)
+{
+	int	i;
+	
+	if (flag < 0) //printf("export: not an identifier: %s\n", name);
+		return (name);
+	else
+	{
+		i = search_env(*envp, name);
+		if ((*envp)[i] != NULL)
+		{
+			free((*envp)[i]);
+			(*envp)[i] =  make_env(name, value, flag);
+		}
+		else
+			*envp = update_envp(*envp, 0, make_env(name, value, flag));
+	}
+	return (NULL);
+}
+
+void	ft_export(char **ptr, char ***envp)
+{
+	int	i;
+	int	flag;
+	char	*rax;
+
+	i = 1;
+	flag = 0;
+	while (ptr[i] != NULL)
+	{
+		if (ft_strchr(ptr[i], '='))
+			rax = set_env(ft_substr(ptr[i], 0, ft_strchr(ptr[i], '=') - ptr[i]), ft_strdup(ft_strchr(ptr[i], '=') + 1), env_validate(ptr[i]), envp);
+		else
+			rax = set_env(ptr[i], "", env_validate(ptr[i]), envp);
+		if (flag == 0 && rax != NULL)
+		{
+			printf("export: not an identifier: %s\n", rax);
+			flag = 1;
+		}
+		i++;
+	}
+}
+
+int main(int argc, char *argv[], char *env[])
 {
 	char	*cin;
 	pid_t	pid;
@@ -267,9 +426,11 @@ int main(int argc, char *argv[], char *envp[])
 	char	*tmp_pwd;
 	char	**cd;
 	char	**cd_path;
+	char	**envp;
 	int i;
 	struct termios	old;
 
+	envp = update_envp(env, 0, NULL);
 	while (1)
 	{
 		pwd = getcwd(NULL, BUFSIZ);
@@ -345,7 +506,11 @@ int main(int argc, char *argv[], char *envp[])
 		}
 		else if(!ft_strncmp(cin, "export ",7) || !ft_strncmp(cin, "export", 8))
 		{
-			//now
+			cd = ft_split(cin, ' ');
+			if (cd[1] == NULL)
+				print_envp(envp);
+			else
+				ft_export(cd, &envp);
 		}
 		else
 		{
