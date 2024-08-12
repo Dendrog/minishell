@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/11 22:57:16 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/12 23:55:51 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -297,7 +297,7 @@ void	print_envp(char **envp)
 {
 	while (*envp != NULL)
 	{
-		printf("%s\n", *envp);
+		printf("declare -x %s\n", *envp);
 		envp++;
 	}
 }
@@ -350,11 +350,11 @@ int	env_validate(char *ptr)
 			if ((ft_strchr(ptr, '=') + 1)[0] == '\0')
 				return (1);
 			if (ft_strchr(ptr, '=') != ft_strrchr(ptr, '='))
-				return (2);
-			return (0);
+				return (1);
+			return (1);
 		}
 		else
-			return (1);
+			return (0);
 	}
 	else
 		return (-1); //export: not an identifier: 2
@@ -364,12 +364,15 @@ char	*make_env(char *name, char *value, int flag)
 {
 	char	*ptr;
 	ptr = name;
-	ptr = ft_strjoin(ptr, "="); //free
 	if (flag > 0)
-		ptr = ft_strjoin(ptr, "'");
-	ptr = ft_strjoin(ptr, value);
-	if (flag > 0)
-		ptr = ft_strjoin(ptr, "'");
+	{
+		ptr = ft_strjoin(ptr, "="); //free
+		//if (flag > 0)
+		ptr = ft_strjoin(ptr, "\"");
+		ptr = ft_strjoin(ptr, value);
+		//if (flag > 0)
+		ptr = ft_strjoin(ptr, "\"");
+	}
 	return (ptr);
 }
 
@@ -409,7 +412,7 @@ void	ft_export(char **ptr, char ***envp)
 			rax = set_env(ptr[i], "", env_validate(ptr[i]), envp);
 		if (flag == 0 && rax != NULL)
 		{
-			printf("export: not an identifier: %s\n", rax);
+			printf("minishell: export: `%s': not a valid identifier\n", rax);
 			flag = 1;
 		}
 		i++;
