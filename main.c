@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/12 23:55:51 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/20 18:47:48 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -293,15 +293,6 @@ char **update_envp(char **envp, int type, char *new)
 	return (ptr);
 }
 
-void	print_envp(char **envp)
-{
-	while (*envp != NULL)
-	{
-		printf("declare -x %s\n", *envp);
-		envp++;
-	}
-}
-
 int	double_ptr_size(char **ptr)
 {
 	int	i;
@@ -315,19 +306,21 @@ int	double_ptr_size(char **ptr)
 int	search_env(char **envp, char *name)
 {
 	int	i;
-	char	**re;
+	char	*re;
 
 	i = 0;
+	if (ft_strchr(name, '='))
+		re = ft_substr(name, 0, ft_strchr(name, '=') - name);
+	else
+		re = name;
 	while (*envp)
 	{
-		if (!ft_strncmp(*envp, name, ft_strlen(name)))
+		if (!ft_strncmp(*envp, re, ft_strlen(re)))
 			break ;
 		envp++;
 		i++;
 	}
 	return (i);
-	/*tmp = (*envp);
-	return (tmp+5);*/
 }
 
 int	is_validname(char *ptr)
@@ -357,43 +350,55 @@ int	env_validate(char *ptr)
 			return (0);
 	}
 	else
-		return (-1); //export: not an identifier: 2
+		return (-1);
 }
 
-char	*make_env(char *name, char *value, int flag)
-{
-	char	*ptr;
-	ptr = name;
-	if (flag > 0)
-	{
-		ptr = ft_strjoin(ptr, "="); //free
-		//if (flag > 0)
-		ptr = ft_strjoin(ptr, "\"");
-		ptr = ft_strjoin(ptr, value);
-		//if (flag > 0)
-		ptr = ft_strjoin(ptr, "\"");
-	}
-	return (ptr);
-}
-
-char *set_env(char *name, char *value, int flag, char ***envp)
+char *set_env(char *name, int flag, char ***envp)
 {
 	int	i;
 	
-	if (flag < 0) //printf("export: not an identifier: %s\n", name);
+	if (flag < 0)
 		return (name);
 	else
 	{
 		i = search_env(*envp, name);
 		if ((*envp)[i] != NULL)
 		{
+			if (!ft_strchr(name, '='))
+				return (NULL);
 			free((*envp)[i]);
-			(*envp)[i] =  make_env(name, value, flag);
+			(*envp)[i] =  name;
 		}
 		else
-			*envp = update_envp(*envp, 0, make_env(name, value, flag));
+			*envp = update_envp(*envp, 0, name);
 	}
 	return (NULL);
+}
+
+void	print_envp(char **envp, int flag)
+{
+	while (*envp != NULL)
+	{
+		if (flag == 1)
+		{
+			if (env_validate(*envp))
+			{
+				ft_putstr_fd("declare -x ", 1);
+				write(1, *envp, ft_strchr(*envp, '=') - *envp);
+				write(1, "=\"", 2);
+				ft_putstr_fd(ft_strchr(*envp, '=') + 1, 1);
+				write(1, "\"\n", 2);
+			}
+			else
+				printf("declare -x %s\n", *envp);
+		}
+		else
+		{
+			if (env_validate(*envp))
+				printf("%s\n", *envp);
+		}
+		envp++;
+	}
 }
 
 void	ft_export(char **ptr, char ***envp)
@@ -406,10 +411,7 @@ void	ft_export(char **ptr, char ***envp)
 	flag = 0;
 	while (ptr[i] != NULL)
 	{
-		if (ft_strchr(ptr[i], '='))
-			rax = set_env(ft_substr(ptr[i], 0, ft_strchr(ptr[i], '=') - ptr[i]), ft_strdup(ft_strchr(ptr[i], '=') + 1), env_validate(ptr[i]), envp);
-		else
-			rax = set_env(ptr[i], "", env_validate(ptr[i]), envp);
+		rax = set_env(ptr[i], env_validate(ptr[i]), envp);
 		if (flag == 0 && rax != NULL)
 		{
 			printf("minishell: export: `%s': not a valid identifier\n", rax);
@@ -511,10 +513,12 @@ int main(int argc, char *argv[], char *env[])
 		{
 			cd = ft_split(cin, ' ');
 			if (cd[1] == NULL)
-				print_envp(envp);
+				print_envp(envp, 1);
 			else
 				ft_export(cd, &envp);
 		}
+		else if(!ft_strncmp(cin, "env",5) || !ft_strncmp(cin, "env ", 4))
+			print_envp(envp, 0);
 		else
 		{
 			pid = fork();
