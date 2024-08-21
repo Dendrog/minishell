@@ -1,1 +1,1 @@
-cc -g main.c libft/libft.a -lreadline
+cc -g main.c libft/libft.a -lreadline -lncurses

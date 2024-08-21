@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/20 18:47:48 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/21 20:56:09 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <termios.h>
 #include <readline/history.h>
+#include <termcap.h>
 
 void	error_end(int er)
 {
@@ -216,7 +217,6 @@ void	sg(int signal)
 	if (signal == SIGINT)
 	{
 		rl_on_new_line();
-		rl_replace_line("", 0);
 		rl_redisplay();
 		printf("^C\n");
 		rl_on_new_line();
@@ -421,6 +421,12 @@ void	ft_export(char **ptr, char ***envp)
 	}
 }
 
+ft_exit(char *ptr)
+{
+	
+	exit(code);
+}
+
 int main(int argc, char *argv[], char *env[])
 {
 	char	*cin;
@@ -519,6 +525,10 @@ int main(int argc, char *argv[], char *env[])
 		}
 		else if(!ft_strncmp(cin, "env",5) || !ft_strncmp(cin, "env ", 4))
 			print_envp(envp, 0);
+		else if(!ft_strncmp(cin, "exit",5) || !ft_strncmp(cin, "exit ", 5))
+		{
+			print_envp(envp, 0);
+		}
 		else
 		{
 			pid = fork();
