@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/21 20:56:09 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/23 23:01:54 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -421,10 +421,31 @@ void	ft_export(char **ptr, char ***envp)
 	}
 }
 
-ft_exit(char *ptr)
+int	only_digit(char *ptr)
 {
-	
-	exit(code);
+	while (*ptr)
+	{
+		if (!ft_isdigit(*ptr))
+			return (0);
+		ptr++;
+	}
+	return (1);
+}
+
+void	ft_exit(char **ptr)
+{
+	printf("exit\n");
+	if (ptr[1] == NULL)
+		exit(0);
+	else if (!only_digit(ptr[1]))
+	{
+		printf("minishell: exit: %s: numeric argument required\n", ptr[1]);
+		exit(2);
+	}
+	else if (ptr[2] != NULL)
+		printf("minishell: exit: too many arguments\n");
+	else
+		exit((unsigned char)ft_atoi(ptr[1]));
 }
 
 int main(int argc, char *argv[], char *env[])
@@ -446,10 +467,10 @@ int main(int argc, char *argv[], char *env[])
 	{
 		pwd = getcwd(NULL, BUFSIZ);
 		if (!ft_strncmp(pwd, extract_home(envp), ft_strlen(extract_home(envp))))
-			{
-				cwd = pwd + ft_strlen(extract_home(envp));
-				cwd = ft_strjoin("~", cwd);
-			}
+		{
+			cwd = pwd + ft_strlen(extract_home(envp));
+			cwd = ft_strjoin("~", cwd);
+		}
 		else
 			cwd = pwd;
 		cwd = ft_strjoin(cwd, "$ ");
@@ -523,11 +544,12 @@ int main(int argc, char *argv[], char *env[])
 			else
 				ft_export(cd, &envp);
 		}
-		else if(!ft_strncmp(cin, "env",5) || !ft_strncmp(cin, "env ", 4))
+		else if (!ft_strncmp(cin, "env",5) || !ft_strncmp(cin, "env ", 4))
 			print_envp(envp, 0);
-		else if(!ft_strncmp(cin, "exit",5) || !ft_strncmp(cin, "exit ", 5))
+		else if (!ft_strncmp(cin, "exit",5) || !ft_strncmp(cin, "exit ", 5))
 		{
-			print_envp(envp, 0);
+			cd = ft_split(cin, ' ');
+			ft_exit(cd);
 		}
 		else
 		{
