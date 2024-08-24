@@ -6,7 +6,7 @@
 /*   By: jakim <jakim@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/09 20:12:13 by jakim             #+#    #+#             */
-/*   Updated: 2024/08/23 23:01:54 by jakim            ###   ########.fr       */
+/*   Updated: 2024/08/24 19:09:32 by jakim            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -303,19 +303,24 @@ int	double_ptr_size(char **ptr)
 	return (i);
 }
 
-int	search_env(char **envp, char *name)
+int	search_env(char **envp, char *name, int flag) // free
 {
 	int	i;
 	char	*re;
+	char	*tmp;
 
 	i = 0;
-	if (ft_strchr(name, '='))
+	if (ft_strchr(name, '=') && flag == 1)
 		re = ft_substr(name, 0, ft_strchr(name, '=') - name);
 	else
 		re = name;
 	while (*envp)
 	{
-		if (!ft_strncmp(*envp, re, ft_strlen(re)))
+		if (ft_strchr(*envp, '='))
+			tmp = ft_substr(*envp, 0, ft_strchr(*envp, '=') - *envp);
+		else
+			tmp = *envp;
+		if (!ft_strncmp(tmp, re, ft_strlen(re)))
 			break ;
 		envp++;
 		i++;
@@ -361,7 +366,7 @@ char *set_env(char *name, int flag, char ***envp)
 		return (name);
 	else
 	{
-		i = search_env(*envp, name);
+		i = search_env(*envp, name, 1);
 		if ((*envp)[i] != NULL)
 		{
 			if (!ft_strchr(name, '='))
@@ -381,7 +386,7 @@ void	print_envp(char **envp, int flag)
 	{
 		if (flag == 1)
 		{
-			if (env_validate(*envp))
+			if (env_validate(*envp) == 1)
 			{
 				ft_putstr_fd("declare -x ", 1);
 				write(1, *envp, ft_strchr(*envp, '=') - *envp);
@@ -389,12 +394,12 @@ void	print_envp(char **envp, int flag)
 				ft_putstr_fd(ft_strchr(*envp, '=') + 1, 1);
 				write(1, "\"\n", 2);
 			}
-			else
+			else if (env_validate(*envp) == 0)
 				printf("declare -x %s\n", *envp);
 		}
 		else
 		{
-			if (env_validate(*envp))
+			if (env_validate(*envp) == 1)
 				printf("%s\n", *envp);
 		}
 		envp++;
@@ -446,6 +451,32 @@ void	ft_exit(char **ptr)
 		printf("minishell: exit: too many arguments\n");
 	else
 		exit((unsigned char)ft_atoi(ptr[1]));
+}
+
+void	ft_unset(char **ptr, char **envp)
+{
+	int	i;
+	int	k;
+	
+	i = 1;
+	while (ptr[i] != NULL)
+	{
+		
+		k = search_env(envp, ptr[i], 0);
+		free(envp[k]);
+		envp[k] = ft_strdup("");
+		i++;
+	}
+}
+
+void	ft_echo(char **ptr, char **envp)
+{
+	int	flag;
+
+	if (!ft_strncmp(ptr[1], "-n", 3))
+		flag = 1;
+	else
+		flag = 0;
 }
 
 int main(int argc, char *argv[], char *env[])
@@ -550,6 +581,22 @@ int main(int argc, char *argv[], char *env[])
 		{
 			cd = ft_split(cin, ' ');
 			ft_exit(cd);
+		}
+		else if (!ft_strncmp(cin, "unset", 6) || !ft_strncmp(cin, "unset ", 6))
+		{
+			cd = ft_split(cin, ' ');
+			ft_unset(cd, envp);
+		}
+		else if (!ft_strncmp(cin, "pwd", 6) || !ft_strncmp(cin, "pwd " , 4))
+		{
+			tmp_pwd = getcwd(NULL, BUFSIZ);
+			printf("%s\n", tmp_pwd);
+			free(tmp_pwd);
+		}
+		else if (!ft_strncmp(cin, "echo", 6) || !ft_strncmp(cin, "echo " , 5))
+		{
+			cd = ft_split(cin, ' ');
+			ft_echo(cd, envp);
 		}
 		else
 		{
